@@ -9,3 +9,7 @@ WP-BuyItNow has an integrated smart digital content sales and payment solution f
 ### Paypal Sales Monitoring
 
 The integration of the WP-BuyItNow purchase monitoring system with PayPal gives a blog or website administrator quick insight on the activity of their online store, while giving them access to the digital content unlocking parameters to each and every order, so they can actually verify something works if a user contends otherwise.
+
+### Multiple Payment Processsor Integration Example (Using Google Checkout)
+
+Considering this plugin hasn't been updated in over 6 years, and its being released as open-source, it pays to mention the fact that multiple payment processor integration isn't only possible, its already written into the plugin. Use the integrated Google Checkout programming as an example. Much like I stated, this plugin hasn't been updated in 6+ years, never really going back in to integrate Square, Stripe, Apple Pay or any other payment processors nor to remove Google Checkout.
