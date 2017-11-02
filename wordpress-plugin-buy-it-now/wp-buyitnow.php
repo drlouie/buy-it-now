@@ -1,5 +1,5 @@
 <?php
-if(!function_exists('add_action')){header('HTTP/1.1 403 Forbidden');header('Location: http://www.kill-mill.com/');exit();}
+if(!function_exists('add_action')){header('HTTP/1.1 403 Forbidden');header('Location: http://www.domainwebsite.com/');exit();}
 /**
 * @package Buy It Now, WordPress
 */
@@ -43,8 +43,8 @@ Author URI: http://LouieRD.com/
 
 //--> Properties
 $StoreDomain = "http://".$_SERVER["SERVER_NAME"]."";
-$StoreName = "Kill-Mill by Michael Miller";
-$StoreOwnerName = "Mike Miller";
+$StoreName = "Store Name";
+$StoreOwnerName = "Store Owner Name";
 $StoreOwnerTitle = "Award-winning Photographer";
 //-->> For cross-browser cookies
 $SDN=explode(".",$_SERVER["SERVER_NAME"]);$RFst=array_shift($SDN);
@@ -89,7 +89,7 @@ $ObfuscatedMarkup = 0;
 //--> PAYMENT PROCESSOR PARAMETERS
 
 //--> PayPal Merchant Account/Cart Properties [Production and Sandbox: Account Email Addresses]
-$PaymentMerchant_PayPal = 'info@mikemillerphoto.com';
+$PaymentMerchant_PayPal = 'info@domainwebsite.com';
 $PaymentMerchant_PayPal_Sandbox = '';
 // DEFAULT BUTTON TYPE IS BUY-NOW [_xclick] PayPal
 $ButtonTypePP = '_xclick';
