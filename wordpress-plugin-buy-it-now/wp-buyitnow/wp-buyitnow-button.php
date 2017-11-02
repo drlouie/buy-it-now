@@ -1,5 +1,4 @@
 <?php 
-if(!defined('ABSPATH')){header('HTTP/1.1 403 Forbidden');header('Location: http://www.kill-mill.com/');exit();}
 /**
 * @package Buy It Now, WordPress: Custom Button Generator
 */
