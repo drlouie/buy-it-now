@@ -1,6 +1,6 @@
 # Wordpress Plugin: Buy It Now
 
-* [WP-BuyItNow: Tech Docs](https://myvirtualprivate.com/internet-development-tools/wordpress-plugins/buy-it-now-button.php)
+* [WP-BuyItNow: Tech Docs](http://vps-net.com/internet-development-tools/wordpress-plugins/buy-it-now-button.php)
 
 Append PayPal buttons unto posts, articles, menus and virtually anywhere desired, using nothing but short codes. An integrated sales platform complete with payment lifecycle initialization and monitoring capabilities, along with digital or shipped product delivery functionality. BuyItNow also has cancellation, refund and order tracking information along with the uniquely cool 'digital media locker' functionality, which further enhances an online sales platform's capabilities. There are many other options, variables and features which make quick deployment a definite possibility, working with very minimal integration times along with the least possible amount of technical requirements on the server, host and the end-user level.
 
