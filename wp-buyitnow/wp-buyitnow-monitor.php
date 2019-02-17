@@ -7,8 +7,7 @@ if(!defined('ABSPATH')){
 * @package Buy It Now, WordPress: Dashboard Monitor [Sales & Payment Monitor]
 */
 /*
-Author: Louie Rd
-Author URI: http://LouieRD.com/
+Author: Luis Gustavo Rodriguez (drlouie)
 */
 
 /*  Copyright 2011 VPS-NET.COM (Email: wp-plugins@vps-net.com)
@@ -170,7 +169,6 @@ function buyitnow_monitor_output() {
 <?php
 	foreach ( $results as $result ) {
 		$myOrderInfo = split("-",$result->option_name);
-		$myOrderInfo = str_replace("google",'<a href="https://'.$GLOBALS["PaymentURLGC"].'sell" target="Google">Google</a>',$myOrderInfo);
 		$myOrderInfo = str_replace("paypal",'<a href="https://'.$GLOBALS["PaymentURLPP"].'" target="PayPal">PayPal</a>',$myOrderInfo);
 		$myPaymentCenter = $myOrderInfo[2];
 		$myPaymentData = $result->option_value;
@@ -183,7 +181,7 @@ function buyitnow_monitor_output() {
 				}
 			}
 		}
-		//--> GC and PayPal TRID get extracted from option_name [original transaction id is our control]
+		//--> PayPal TRID get extracted from option_name [original transaction id is our control]
 		$TransactionID = $myOrderInfo[3];
 		$myOrderState = 'comments';
 		$myOrderState2 = 'total';
@@ -210,7 +208,7 @@ function buyitnow_monitor_output() {
 			}
 		}
 		else if (stristr($myPaymentCenter,'paypal')) {
-			//-->> Google: ORDER RECEIVED status is ok [PayPal: must be PAYMENT VERIFIED/CONFIRMED]
+			//-->> PayPal: must be PAYMENT VERIFIED/CONFIRMED
 			if ((strstr($myPaymentData,'ORDER RECEIVED') || strstr($myPaymentData,'PAYMENT VERIFIED/CONFIRMED')) && stristr($myPaymentCenter,'paypal')) { 
 				if (strstr($myPaymentData,'PAYMENT VERIFIED/CONFIRMED')) {
 					$myOrderState = 'approved'; $myOrderState2 = $myOrderState;
@@ -218,7 +216,7 @@ function buyitnow_monitor_output() {
 					$statusTITLE = 'Payment Verified';
 				}
 				else {
-					// only paypal can be set to pending, for google's (basic) unsigned cart process doesn't allow it
+					// paypal set to pending
 					$myOrderState = 'waiting'; 
 					$myOrderState2 = 'pending';
 					$myStatus = 'pending';

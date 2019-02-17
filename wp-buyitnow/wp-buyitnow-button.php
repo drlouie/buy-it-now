@@ -7,8 +7,7 @@ if(!defined('ABSPATH')){
 * @package Buy It Now, WordPress: Custom Button Generator
 */
 /*
-Author: Louie Rd
-Author URI: http://LouieRD.com/
+Author: Luis Gustavo Rodriguez (drlouie)
 */
 
 /*  Copyright 2011 VPS-NET.COM (Email: wp-plugins@vps-net.com)
@@ -42,14 +41,6 @@ Author URI: http://LouieRD.com/
 		$PriceAfterDiscount = sprintf('%.2f', ($actualFullPrice-$discountAmount));
 		//--> PayPal Discount Field [discount percentage, to be calculated at PayPal]
 		$discountFieldPP = '<input type="hidden" name="discount_rate" value="'.$discount.'"/>';
-		//--> Google Checkout Discount Fields [discount amount to be deducted from actualFullPrice at Google Checkout]
-		$discountFieldsGC = '
-		<input type="hidden" name="item_name_2" value="Limited time discount"/>
-		<input type="hidden" name="item_description_2" value="'.$discount.'% off the posted price!"/>
-		<input type="hidden" name="item_price_2" value="-'.$discountAmount.'"/>
-		<input type="hidden" name="item_currency_2" value="'.$GLOBALS["CurrencyCode"].'"/>
-		<input type="hidden" name="item_quantity_2" value="1"/>
-		';
 	}
 	else { $PriceAfterDiscount = $actualFullPrice; }
 
@@ -58,12 +49,10 @@ Author URI: http://LouieRD.com/
 		else { $myTaxRate = $GLOBALS["TaxRate"]; }
 		$itemTaxRate = $myTaxRate;
 		$taxFieldPP = '<input type="hidden" name="tax_rate" value="'.$itemTaxRate.'"/>';
-		//--> by not passing any tax fields, GoogleCheckout automatically charges tax based on transaction parameters
-		$taxFieldGC = '';
 	}
-	//--> force GoogleCheckout to NOT charge tax
+	//--> force to NOT charge tax
 	else {
-		$taxFieldGC = '<input type="hidden" name="shopping-cart.items.item-1.tax-table-selector" value="tax_exempt"/>';
+		// tax_exempt
 	}
 
 	$myStoreName = stripslashes($GLOBALS["StoreName"]);
@@ -100,12 +89,6 @@ Author URI: http://LouieRD.com/
 			$PPShipping .= '<input type="hidden" name="'.$i.'" value="'.$value.'"/>';
 		}
 
-		//-->> PayPal Shipping Table
-		$GCShipping = '';
-		$Google_Checkout_Shipping_Table = getGoogleShippingTable($myProductID);
-		foreach ($Google_Checkout_Shipping_Table as $i => $value) {
-			$GCShipping .= '<input type="hidden" name="'.$i.'" value="'.$value.'"/>';
-		}
 
 	$myBuyItNowButtonPayPal = '
 	<form name="vps-net-com-paypal" action="'.$GLOBALS["fullPaymentURLPP"].'" method="post">
@@ -126,23 +109,6 @@ Author URI: http://LouieRD.com/
 		'.$taxFieldPP.'
 		'.$GLOBALS["testingField"].'
 		<input type="image" name="PayPal" '.$GLOBALS["PayPalButtonImage"].'/>
-	</form>
-	';
-
-	$myBuyItNowButtonGoogleCheckout = '
-	<form name="vps-net-com-google-checkout" action="'.$GLOBALS["fullPaymentURLGC"].'" method="post" '.$GLOBALS["CharSetAccept"].'>
-		<input type="hidden" name="item_name_1" value="'.$myProductName.'"/>
-		<input type="hidden" name="item_description_1" value="'.$myProductID.'"/>
-		<input type="hidden" name="item_price_1" value="'.$ItemPrice.'"/>
-		<input type="hidden" name="item_currency_1" value="'.$GLOBALS["CurrencyCode"].'"/>
-		<input type="hidden" name="item_quantity_1" value="1"/>
-		<input type="hidden" name="item_merchant_id_1" value="'.$GLOBALS["PaymentMerchantGC"].'"/>
-		'.$GCShipping.'
-		'.$discountFieldsGC.'
-		'.$taxFieldGC.'
-		'.$GLOBALS["testingField"].'
-		<input type="hidden" name="_charset_"/>
-		<input type="image" name="Google Checkout" '.$GLOBALS["GoogleCheckoutButtonImage"].'/>
 	</form>
 	';
 

@@ -7,8 +7,7 @@ if(!defined('ABSPATH')){
 * @package Buy It Now, WordPress: Virtual Cart Processor
 */
 /*
-Author: Louie Rd
-Author URI: http://LouieRD.com/
+Author: Luis Gustavo Rodriguez (drlouie)
 */
 
 /*  Copyright 2011 VPS-NET.COM (Email: wp-plugins@vps-net.com)
@@ -61,43 +60,17 @@ function vps_net_buy_it_now($markup) {
 		}
 	}
 
-	//-->>>> Set cookie to keep track of product views by user, for google checkout + local shop tie-ins
-		//-->>>>> With Google, since google redirects user to site, as we have directed, we have ProductID to work with always on user callbacks
-		//-->>>>> So, with ProductID in callback, after payment is made, we can associate paid user's cookie for this product id with transaction ID, after subsequent verification
-		//-->>>>> Two factors must be met: 
-		//-->>>>> 	1. User must click Callback URL right after payment is made, or from google checkout or from email we sent [in essence giving us our ProductID]
-		//-->>>>> 		** Tip: Might wanna SHOUT to user instructions to make sure they click the callback link on the 'Payment Complete' page at Google Checkout, to make sure this doesn't fail???
-		//-->>>>> 	2. User's cookie for ProductID that was purchased must still be alive when Callback URl is clicked, in order for this to function, yet:
-		//-->>>>> 	[Should work under almost any circumstance, unless user is trying to maniupulate the system in a way it wasn't meant to function, a rouge user per se]
-
-		//-->>>>> 	KEEP IN MIND: 	The use of this cookie is strictly tracking multiple products being sold, and which has been paid for. 
-		//-->>>>> 					Meaning, single product or all-access type websites don't need to worry about this at all, for those types of websites this works even if this cookie track fails. Which is why this plugin was marked as being perfect for full-access/all-inclusive/single-product/single-service websites.
-
-	//-->>>
-	if (!isset($_COOKIE['wp-buyitnow-pass'])) {
-		$cProductID = str_replace("[^A-Za-z0-9-]","",$ProductID);
-		//-- encrypt our remote addr | user agent
-		$saltedPrawnHeads = encrypt("".$GLOBALS["callbackURI"]."-----".$_SERVER['REMOTE_ADDR']."----".$_SERVER['HTTP_USER_AGENT']."", $cProductID);
-		//-- hex it to make sure we keep encrypted data integrity
-		$saltedPrawnHeads = strToHex($saltedPrawnHeads);
-		setcookie("wp-buyitnow-product", "".$cProductID."dTXTb".$saltedPrawnHeads."", time()+31536000, SITECOOKIEPATH, $GLOBALS["StoreDomainName"]);
-	}
-
 	//-->> Load Button Generator
 	require_once dirname( __FILE__ ) . '/wp-buyitnow-button.php';
 	$myPayPalForm = $GLOBALS["PayPalForm"];
-	$myGoogleCheckoutForm = $GLOBALS["GoogleCheckoutForm"];
 	$PayPalForm = '';
-	$GoogleCheckoutForm = '';
 
 	//--> If PaymentProcessor is set at the document level [if this is the case, we must be trying to remove one of the processors' buttons from showing]
-	if (isset($PaymentProcessors) && (stristr($PaymentProcessors,'GoogleCheckout') || stristr($PaymentProcessors,'PayPal'))) {
-		if (stristr($PaymentProcessors,'GoogleCheckout')) { $GoogleCheckoutForm = str_replace("%%GOOGLE-CHECKOUT-FORM%%", "$myBuyItNowButtonGoogleCheckout", $myGoogleCheckoutForm); }
+	if (isset($PaymentProcessors) && (stristr($PaymentProcessors,'PayPal'))) {
 		if (stristr($PaymentProcessors,'PayPal')) { $PayPalForm = str_replace("%%PAYPAL-FORM%%", "$myBuyItNowButtonPayPal", $myPayPalForm); }
 	}
-	//--> DEFAULT: Show all PaymentProcessors
+	//--> DEFAULT: Show PaymentProcessors
 	else {
-		$GoogleCheckoutForm = str_replace("%%GOOGLE-CHECKOUT-FORM%%", "$myBuyItNowButtonGoogleCheckout", $myGoogleCheckoutForm);
 		$PayPalForm = str_replace("%%PAYPAL-FORM%%", "$myBuyItNowButtonPayPal", $myPayPalForm);
 	}
 
@@ -105,7 +78,6 @@ function vps_net_buy_it_now($markup) {
 	$myform = $GLOBALS["OutgoingMarkup"];
 	$myform= str_replace("%%PRICE%%",$ProductPrice." ".$GLOBALS["CurrencyCode"],$myform);
 	$myform= str_replace("%%PayPal%%",$PayPalForm,$myform);
-	$myform= str_replace("%%Google%%",$GoogleCheckoutForm,$myform);
 
 	//--> Obfuscate our outgoing markup <form>, if configured as such
 	if ($GLOBALS["ObfuscatedMarkup"] == 1) {
@@ -123,21 +95,6 @@ function vps_net_buy_it_now($markup) {
 	}
 	//-->> Order RECEIVED Successfully (user is coming back from processor after successful): Show activity response [no need to parse buy-it-now buttons again]
 	else if (isset($GLOBALS["Successful"]) || isset($GLOBALS["VerifyAgain"])) {
-		//-->> Pass GCauth, meaning user just came back from posting payment on GC, [set productID tracking cookie based on callback value, if cookie doesn't already exist (should exist if user cookies work and haven't been cleared)]
-		if (isset($GLOBALS["isGCAUTH"]) && !isset($_COOKIE['wp-buyitnow-pass'])) {
-			if (strlen($_GET['wp-buyitnow-item']) > 5) {
-				//-->> Make sure product isn't already set
-				if (!isset($_COOKIE['wp-buyitnow-product'])) {
-					$cProductID = str_replace("[^A-Za-z0-9-]","",trim($_GET['wp-buyitnow-item']));
-					//-- encrypt our remote addr | user agent
-					$saltedPrawnHeads = encrypt("".$GLOBALS["callbackURI"]."-----".$_SERVER['REMOTE_ADDR']."----".$_SERVER['HTTP_USER_AGENT']."", $cProductID);
-					//-- hex it to make sure we keep encrypted data integrity
-					$saltedPrawnHeads = strToHex($saltedPrawnHeads);
-					setcookie("wp-buyitnow-product", "".$cProductID."dTXTb".$saltedPrawnHeads."", time()+31536000, SITECOOKIEPATH, $GLOBALS["StoreDomainName"]);
-				}
-			}
-		}
-
 		//-->>> Ask for user to furnish payment transaction credentials [transactionID/email]
 			//-->>>> If successful we give the thank you message, otherwise we simply show form an ask for them to enter their verification info
 			if (isset($GLOBALS["Successful"])) { $verifyprompt = $GLOBALS["ThankYouForOrdering"].'<br><br>'; }
@@ -145,7 +102,7 @@ function vps_net_buy_it_now($markup) {
 		$verifyform = '<br><br><form method="post" action="#Straight A Study"><ul id="contact"><li><span class="text">Email Address</span><span class="required">(*)</span> <span class="wpcf7-form-control-wrap buyitnow-verify-email"><input type="text" name="buyitnow-verify-email" value="" class="wpcf7-text wpcf7-validates-as-required" size="40" /></span></li><li><span class="text">Transaction ID Number</span><span class="required">(*)</span> <span class="wpcf7-form-control-wrap buyitnow-verify-tid"><input type="text" name="buyitnow-verify-tid" value="" class="wpcf7-text wpcf7-validates-as-required" style="text-indent:150px;" size="40" /></span></li><li id="submit"><input type="submit" value="Unlock My Access"></li></ul><input type="hidden" name="buyitnow-verify-product-id" value="'.$ProductID.'" /></form>';
 		//-->>> Bad Verification Attempt [try again]
 		if(isset($GLOBALS["VerifyAgain"]) && !isset($GLOBALS["NewVerify"])) {
-			$verifyprompt = 'Ooops, that caused an error!<br><br>Let\'s try that again, make sure you copy and paste the Transaction ID Number as provided by Google Checkout payment transactions or for PayPal users, this TransactionID can be found in the order verification email we sent out when you originally made your purchase. Also, make sure you use the proper email address, the address associated with your PayPal or Google Checkout account. Keep in mind, sometimes PayPal and Google Checkout may take a bit longer to process a payment, which means your access can\'t be unlocked until we have received confirmation of payment from either party.';
+			$verifyprompt = 'Ooops, that caused an error!<br><br>Let\'s try that again, make sure you copy and paste the Transaction ID Number we provided can be found in the order verification email we sent out when you originally made your purchase, its labeled as TransactionID. Also, make sure you use the proper email address, the address associated with your PayPal account. Keep in mind, sometimes PayPal may take a bit longer to process a payment, which means your access can\'t be unlocked until we have received confirmation of payment.';
 			if (isset($GLOBALS["VerifyError"])) { $verifyprompt = $GLOBALS["VerifyError"]; }
 		}
 		$verifyprompt .= $verifyform;
@@ -190,7 +147,7 @@ function vps_net_buy_it_now($markup) {
 				$myPasses = explode("-----",$myPass);
 				global $wpdb;
 				$lPTID = preg_replace('/[^A-Za-z0-9]/', '', $myPasses[1]);
-				$vQ = "SELECT * FROM ".$wpdb->options." WHERE option_name = 'buyitnow-purchase-google-".$lPTID."' OR option_name = 'buyitnow-purchase-paypal-".$lPTID."' ORDER BY option_id DESC";
+				$vQ = "SELECT * FROM ".$wpdb->options." WHERE option_name = 'buyitnow-purchase-paypal-".$lPTID."' ORDER BY option_id DESC";
 				$tTr = $wpdb->get_results($vQ);
 				$fndIt = count($tTr);
 				if ($fndIt == 1) {
@@ -199,10 +156,9 @@ function vps_net_buy_it_now($markup) {
 					$lValue = $tTr[0]->option_value;
 					if (strstr($lValue,$ProductID)) {
 						if (stristr($lName,'PayPal')) { $iPaypal = 'PayPal'; }
-						if (stristr($lName,'Google')) { $iGoogle = 'Google Checkout'; }
 						//--> Payment Cancelled/Refunded/Declined
 						if (stristr($lValue,'Cancelled') || stristr($lValue,'Refunded') || stristr($lValue,'Declined')) { $accessError = 2; }
-						else if ($iGoogle || $iPaypal && (int)$myPasses[0] === (int)$lID) { $GoodToGo = 1; }
+						else if ($iPaypal && (int)$myPasses[0] === (int)$lID) { $GoodToGo = 1; }
 					}
 					// product id from purchase doesn't match requested product access
 					else { $accessError = 1; }
@@ -269,13 +225,6 @@ else if (isset($_GET['trid']) && isset($_GET['email'])) {
 }
 else if (isset($_POST['buyitnow-verify-email']) && isset($_POST['buyitnow-verify-tid'])) {
 	$act = 'verify';
-}
-//-->> MAKE SURE ALL ITEMS WITH SERIAL-NUMBER COMING IN ARE SCREENED FOR REMOTE AGENT, SHOULD BE: Google Checkout Notification Agent
-else if (isset($_POST['serial-number']) && strstr($RemoteAgent,'remoteAgent: Google Checkout Notification Agent')) {
-	$act = 'goodgc';
-}
-else if (isset($_GET['wp-buyitnow-item']) && isset($_GET['wp-buyitnow-processor']) && !isset($_COOKIE['wp-buyitnow-pass'])) {
-	$act = 'gcauth';
 }
 else if ( isset($_GET['auth']) && isset($_GET['merchant_return_link']) && isset($_POST['payer_email']) && isset($_POST['receiver_id']) && isset($_POST['payer_id']) && isset($_POST['verify_sign']) && isset($_POST['txn_id']) && isset($_POST['payment_type']) && isset($_POST['mc_currency']) && isset($_POST['residence_country']) ) {
 	$act = 'ppauth';
@@ -405,83 +354,12 @@ switch ($act) {
 		}
 	break;
 
-	//--> 
-	/* 
-	Considering the fact we are working with the most basic of Google Checkout payment processing application interfaces, some restrictions are inherent, for example: Google Checkout will not report to us anything other than the TransactionID when a payment is made, therefore we must work with this restriction in verifying paid users. Furthermore, we can't email a Google Checkout user a digital delivery message, therefore we rely on Google Checkout's native support for digital delivery, which gives the customer a link back to our site after they've made a payment for their product. That link is tied into the access verification system, by product ID, by way of transaction id, therefore helping us deliver content dynamically based on these transaction ids. Also, during verification we save the email address provided by the user, in essence for Google Checkout payments, we rely ONLY on the transaction ID and append the email addresses to the transaction id, as submitted by the user. [we caputre all email addresses submitted to our system associated with every Google Checkout transaction, for security and monitoring]
-	I strongly recommend you use these Buy-It-Now Buttons ONLY with ObfuscatedMarkup ON! [helps provide some tamper protection for your buttons from malicious and rogue users]
-	*/
-
-	//--> Google Checkout callback API provides us with a way to find cancellations/refunds via report codes
-	//--> ALL THESE MUST BE PRESENT FOR NEW ORDER W GOOD PAYMENT
-	//--> [-00001-7 Fulfillment Order State | -00005-1 Notification Acknowledgement | -00005-5 Risk Information | -00006-1 Order State Change Chargeable | -00008-1 Order State Charging | -00010-1 Order State Charged | -00010-2 Order State Completed ]
-		//--> ANYTHING ELSE IS PAYMENT ALTERATION
-		//--> [-00012-3 Payment Refund | -00013-1 Order Cancelled | -00014-1 Payment Cancelled | -00004-1 Order Cancelled]
-	case 'goodgc' :
-		if ( isset($_POST['serial-number'])) {
-			add_filter('the_content', 'vps_net_buy_it_now');
-			$CustomerDTS = trim($_POST['serial-number']);
-			$bCDTS = explode("-", $CustomerDTS);
-			$TransactionID = trim($bCDTS[0]);
-			foreach ($_GET as $key => $value) { $flatOUT .= "\r\n$key: $value"; }
-			foreach ($_POST as $key => $value) { $flatOUT .= "\r\n$key: $value"; }
-			$logContents = "\r\n\r\nORDER RECEIVED [transactionID:".$TransactionID."]\r\ntransactionID: ".$TransactionID."\r\nlogged: ".$datetimeUNIX."\r\nremoteIP: ".$RemoteAddr."".$RemoteHostName."".$RemoteAgent."" . $flatOUT;
-			if(!add_option('buyitnow-purchase-google-'.$TransactionID.'',''.$logContents.'')) {
-				$PreviousOrderStatus = get_option('buyitnow-purchase-google-'.$TransactionID.'');
-				//--> Only update the order status if this serial-number doesn't already exist in its file
-				if (!strstr($PreviousOrderStatus,''.$CustomerDTS.'')) {
-					$currentStatus = '';
-					//--> If Google Checkout is calling back with status changes
-					if (strstr($CustomerDTS,"-00013-1") || strstr($CustomerDTS,"-00014-1") || strstr($CustomerDTS,"-00004-1") || strstr($CustomerDTS,"-00012-3")) { 
-						//--> Make sure it doesn't already exist, no need for duplicate status changes on file
-						if(!strstr($PreviousOrderStatus,"ORDER CANCELLED/PAYMENT REFUNDED")) {
-							$currentStatus = "\r\n\r\nORDER CANCELLED/PAYMENT REFUNDED [transactionID:".$TransactionID."]";
-						}
-					}
-
-					//--> In other processes we accumulate all email addresses submitted by Google Checkout users [if one or more exists append all to end of our report]
-					if (stristr($PreviousOrderStatus,'email_addy: ')) {
-						$POS = explode('email_addy:',$PreviousOrderStatus);
-						$POS[0] = trim($POS[0]) . ','.$CustomerDTS.'';
-						$PreviousOrderStatus = "\r\n\r\n".implode("\r\nemail_addy:",$POS)."" . $currentStatus;
-						$PreviousOrderStatus = str_replace("\r\n\r\nemail_addy:","\r\nemail_addy:",$PreviousOrderStatus);
-					}
-					//--> No email addy present just save it wholly
-					else {
-						$PreviousOrderStatus .= ','.$CustomerDTS.''.$currentStatus;
-					}
-					update_option('buyitnow-purchase-google-'.$TransactionID.'', ''.$PreviousOrderStatus.'');
-					wp_cache_set('buyitnow-purchase-google-'.$TransactionID.'',  ''.$PreviousOrderStatus.'');
-				}
-			}
-			else {
-				add_option('buyitnow-purchase-google-'.$TransactionID.'',''.$logContents.'');
-				//--> email admin with new order received message
-				if ($GLOBALS["NewOrderMessage"] == 1) {
-					buy_it_now_mailer('','no-reply@'.$_SERVER['SERVER_NAME'].'',''.$GLOBALS["StoreName"].'','Google Checkout order received: #'.$TransactionID.'',"You've received a new ".$GLOBALS["StoreName"]." order.\r\n\r\nPayment for this order is currently being processed by Google Checkout as Transaction #".$TransactionID.".\r\n\r\n".$GLOBALS["EmailFooterMessage"]."");
-				}
-			}
-			header('HTTP/1.0 200 OK');
-			header("Content-type: text/plain; charset=utf-8");
-			echo 'serial-number='.$CustomerDTS.'';
-			exit();
-		}
-	break;
-
-	//--> User just came back from successful payment on Google Checkout
-	//--> Check referer, then ask them to verify their transaction id and email address, keep in mind we only have associated transaction id reported to us by Google Checkout at this point in the in the process.
-		//-->> ALSO, used as general entrance to the verification request form for other processes
-	case 'gcauth':
-		$Successful = 1;
-		$isGCAUTH = 1;
-		add_filter('the_content', 'vps_net_buy_it_now');
-	break;
-
 	//--> Verify/Unlock Access to Product Digital Locker
 	case 'verify':
 		global $wpdb;
 		$myPTEM = $_POST['buyitnow-verify-email'];
 		$myPTID = preg_replace('/[^A-Za-z0-9]/', '', $_POST['buyitnow-verify-tid']);
-		$verifyQ = "SELECT * FROM ".$wpdb->options." WHERE option_name = 'buyitnow-purchase-google-".$myPTID."' OR option_name = 'buyitnow-purchase-paypal-".$myPTID."' ORDER BY option_id DESC";
+		$verifyQ = "SELECT * FROM ".$wpdb->options." WHERE option_name = 'buyitnow-purchase-paypal-".$myPTID."' ORDER BY option_id DESC";
 		$theTransaction = $wpdb->get_results($verifyQ);
 		$foundIt = count($theTransaction);
 		//--> Coming in from a verify button entrance, skip error parsing
@@ -493,7 +371,6 @@ switch ($act) {
 			$PreviousOrderStatus = $theTransaction[0]->option_value;
 
 			if (stristr($myName,'PayPal')) { $imPaypal = 'PayPal'; $myProcessor = $imPaypal; $isprocessor = 'paypal'; }
-			if (stristr($myName,'Google')) { $imGoogle = 'Google Checkout'; $myProcessor = $imGoogle; $isprocessor = 'google'; }
 
 			//--> Payment Cancelled/Refunded/Declined
 			if (stristr($PreviousOrderStatus,'Cancelled') || stristr($PreviousOrderStatus,'Refunded') || stristr($PreviousOrderStatus,'Declined')) {
@@ -515,59 +392,16 @@ switch ($act) {
 			else if ($imPaypal && stristr($PreviousOrderStatus,'payer_email: '. $myPTEM)) {
 				$Verified = 1;
 			}
-			//--> Catch GOOGLE transactions and since we've verified they've input an email address we move forward
-			else if ($imGoogle) {
-				//-->> Append email address to local transaction record, if it exists
-				if(!add_option('buyitnow-purchase-google-'.$myPTID.'','')) {
-					$Verified = 1;
-					$PreviousOrderStatus = get_option('buyitnow-purchase-google-'.$myPTID.'');
-					//-->>> If orderNumber doesn't exist in the local transaction record, do so now [only Google transactions]
-					if (!stristr($PreviousOrderStatus,'itemNumber: ')) {
-						//-->>> If cookie contains our product info
-						if (isset($_COOKIE['wp-buyitnow-product'])) {
-							$myExtras = '';
-							$myProductIdent = explode("dTXTb",$_COOKIE['wp-buyitnow-product']);
-							$myItemNumber = $myProductIdent[0];
-							if (strlen($myItemNumber) > 0) {
-								if (ctype_xdigit($myProductIdent[1])) { 
-									$unSaltedPrawnHeads = hexToStr($myProductIdent[1]);
-									$unSaltedPrawnHeads = decrypt($unSaltedPrawnHeads, $myItemNumber);
-									$losExtras = explode("-----",$unSaltedPrawnHeads);
-									if (strlen($losExtras[0]) > 0) {
-										$goodExtras = 1;
-										$myExtras .= "\r\nitemURI: ".$losExtras[0]."";
-									}
-									if (strlen($losExtras[2]) > 0) {
-										$myExtras .= "\r\nuserWebBrowser: ".$losExtras[2]."";
-									}
-								}
-								$myProdIdent = "\r\nitemNumber: ".$myItemNumber."".$myExtras;
-								$PreviousOrderStatus = str_replace("\r\nlogged: ","".$myProdIdent."\r\nlogged: ",$PreviousOrderStatus);
-								update_option('buyitnow-purchase-google-'.$myPTID.'', "".$PreviousOrderStatus."");
-								wp_cache_set('buyitnow-purchase-google-'.$myPTID.'',  "".$PreviousOrderStatus."");
-							}
-						}
-					}
-					//-->>> If email address entered hasn't been saved to the local transaction record, do so now [only Google transactions can have multiple email addresses considering we don't have reference to actual address used at Google Checkout, therefore we log all email address input by user, easier to track rouge users]
-					if (!stristr($PreviousOrderStatus,'email_addy: '.$myPTEM.'')) {
-						update_option('buyitnow-purchase-google-'.$myPTID.'', "".$PreviousOrderStatus."\r\nemail_addy: ".$myPTEM."");
-						wp_cache_set('buyitnow-purchase-google-'.$myPTID.'',  "".$PreviousOrderStatus."\r\nemail_addy: ".$myPTEM."");
-					}
-				}
-				//--> SERIOUS ERROR: How can this transaction not exist at this point in the process???? {HACK!}
-				else { $VerifyAgain = 1; }
-			}
 			//--> PayPal: Email doesn't match the one saved within local transaction record [tid]
 			else { $VerifyAgain = 1; }
 
 			//-->> Find order information if specific params exist, which means our order setup is good to go
 			$PreviousOrderStatus = get_option('buyitnow-purchase-'.$isprocessor.'-'.$myPTID.'');
-			//-->> itemNumber: Google | item_number: PayPal
-			if (strstr($PreviousOrderStatus,'logged: ') && (strstr($PreviousOrderStatus,'item_number: ') || strstr($PreviousOrderStatus,'itemNumber: '))) {
+			//-->> item_number: PayPal
+			if (strstr($PreviousOrderStatus,'logged: ') && (strstr($PreviousOrderStatus,'item_number: '))) {
 				$POS = explode("\r\n",$PreviousOrderStatus);
 				$myFirstName = '';
 				$myLastName = '';
-				if (!$myItemNumber) { $myItemNumber=''; }
 				$myLogged = '';
 				foreach ($POS as $aPOS) {
 					//-->>> Always, 1st item only
@@ -575,9 +409,8 @@ switch ($act) {
 						$theL = explode("logged: ",$aPOS);
 						$myLogged = trim($theL[1]);
 					}
-					if ((strstr($aPOS,'item_number: ') || strstr($aPOS,'itemNumber: ')) && !$myItemNumber) {
+					if ((strstr($aPOS,'item_number: ')) && !$myItemNumber) {
 						if (strstr($aPOS,'item_number: ')) { $theINum = explode('item_number: ',$aPOS); }
-						else if (strstr($aPOS,'itemNumber: ')) { $theINum = explode('itemNumber: ',$aPOS); }
 						$myItemNumber = trim($theINum[1]);
 					}
 				}
@@ -640,11 +473,11 @@ switch ($act) {
 		global $wpdb;
 		$myPTEM = $_POST['buyitnow-refund-email'];
 		$myPTID = preg_replace('/[^A-Za-z0-9]/', '', $_POST['buyitnow-refund-tid']);
-		$verifyQ = "SELECT * FROM ".$wpdb->options." WHERE option_name = 'buyitnow-purchase-google-".$myPTID."' OR option_name = 'buyitnow-purchase-paypal-".$myPTID."' ORDER BY option_id DESC";
+		$verifyQ = "SELECT * FROM ".$wpdb->options." WHERE option_name = 'buyitnow-purchase-paypal-".$myPTID."' ORDER BY option_id DESC";
 		$theTransaction = $wpdb->get_results($verifyQ);
 		$foundIt = count($theTransaction);
 		$isNewRefund = 1;
-		//-->> NO REFUNDS AFTER 90 DAYS NO MATTER WHAT, GC and PP limit
+		//-->> NO REFUNDS AFTER 90 DAYS NO MATTER WHAT, PP limit
 		$refundable = 90;
 		if (isset($GLOBALS["RefundTime"]) && (int)$GLOBALS["RefundTime"] > 0) { 
 			$refundable = (int)$GLOBALS["RefundTime"]; 
@@ -654,9 +487,8 @@ switch ($act) {
 			$myName = $theTransaction[0]->option_name;
 			$myValue = $theTransaction[0]->option_value;
 			if (stristr($myName,'PayPal')) { $imPaypal = 'PayPal'; $myProcessor = $imPaypal; $myMerchantURI = 'http://'.$PaymentURLPP; $isprocessor = 'paypal'; }
-			if (stristr($myName,'Google')) { $imGoogle = 'Google Checkout'; $myProcessor = $imGoogle; $myMerchantURI = 'http://'.$PaymentURLGC; $isprocessor = 'google'; }
-			//-->> Verify Paypal transactions further by associated email address, otherwise verify this is a Google Checkout transaction
-			if (($imPaypal && stristr($myValue,'payer_email: '. $myPTEM)) || $imGoogle) {
+			//-->> Verify Paypal transactions further by associated email address
+			if ($imPaypal && stristr($myValue,'payer_email: '. $myPTEM)) {
 				$RefundRequest = 1;
 				$RefundResponse = "You've successfully submitted your refund request for Transaction ID: ".$myPTID.".<br><br>Please allow up to 72 hours for your refund to take effect. If you have any questions or concerns regarding this refund request please contact ".$myProcessor.".";
 				$PreviousOrderStatus = get_option('buyitnow-purchase-'.$isprocessor.'-'.$myPTID.'');
@@ -691,26 +523,15 @@ switch ($act) {
 						if (((int)$GLOBALS["RefundTime"] > 0 && $daysSince > (int)$GLOBALS["RefundTime"]) || $daysSince > 90) {
 							unset($RefundResponse);
 							$RefundRequest = 1;
-							$RefundError = "Unfortunately, we aren't able to issue you a refund on Transaction ID: ".$myPTID.", considering it was bought over ".$daysSince." days ago. We only offer refunds for purchases made within the last ".$refundable." days.<br><br>We apologize for the inconvenience this may have caused. If you have any questions or issues regarding this transaction please contact ".$imGoogle.".";
+							$RefundError = "Unfortunately, we aren't able to issue you a refund on Transaction ID: ".$myPTID.", considering it was bought over ".$daysSince." days ago. We only offer refunds for purchases made within the last ".$refundable." days.<br><br>We apologize for the inconvenience this may have caused. If you have any questions or issues regarding this transaction please contact .";
 						}
 					}
 					//-->> Only if no error ATM
 					if (!$RefundError) {
-						//-->> Is Google, append email address to local transaction record, no reason why it shouldn't exist, still we must double-check
-						if ($imGoogle) {
-							//-->> Append email address to local transaction record, if it exists
-							if(!add_option('buyitnow-purchase-google-'.$myPTID.'','')) {
-								//-->>> If email address entered hasn't been saved to the local transaction record, do so now [only Google transactions can have multiple email addresses considering we don't have reference to actual address used at Google Checkout, therefore we log all email address input by user, easier to track rouge users]
-								if (!stristr($PreviousOrderStatus,'email_addy: '.$myPTEM.'')) {
-									$myEmail = "\r\nemail_addy: ".$myPTEM."";
-								}
-							}
-						}
 						//-->> Is Paypal, find First/Last name to make it easier for admin to find transaction at PayPal
-						else {
-							$UsersFullName = $myFirstName . ' ' . $myLastName;
-							$fromUser = 'from '.$UsersFullName;
-						}
+						$UsersFullName = $myFirstName . ' ' . $myLastName;
+						$fromUser = 'from '.$UsersFullName;
+						
 						//--> Is first refund request
 						if (!strstr($PreviousOrderStatus,'REFUND REQUESTED')) {
 							//-->>> Tag Transaction as REFUND REQUESTED
@@ -732,7 +553,7 @@ switch ($act) {
 		}
 		if (!$RefundResponse && !$RefundRequest) {
 			$RefundRequest = 1;
-			$RefundError = "Ooops, that caused an error!<br><br>Let's try that again, make sure you copy and paste the Transaction ID Number as provided by your Google Checkout payment transaction or for PayPal users, your transaction ID will be located in the email we sent you when you originally made your purchase. Also, make sure you use the proper email address, the address associated with your PayPal or Google Checkout account. Keep in mind, sometimes PayPal and Google Checkout may take a bit longer to process a payment, which means your transaction can't be refunded until we have received confirmation of payment from either party.";
+			$RefundError = "Ooops, that caused an error!<br><br>Let's try that again, make sure you copy and paste the Transaction ID Number we provided you is located in the email we sent you when you originally made your purchase, labeled TransactionID. Also, make sure you use the proper email address, the address associated with your PayPal account. Keep in mind, sometimes PayPal may take a bit longer to process a payment, which means your transaction can't be refunded until we have received confirmation of payment.";
 		}
 		add_filter('the_content', 'vps_net_buy_it_now');
 	break;

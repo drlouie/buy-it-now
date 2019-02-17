@@ -7,12 +7,11 @@ if(!function_exists('add_action')){
 * @package Buy It Now, WordPress
 */
 /*
-Plugin Name: WP-BuyItNow by VPS-NET (Simple Payment Gateway) [QDD]
-Plugin URI: http://www.vps-net.com/cms-support/wordpress/plugins/ecommerce/payment/buy-it-now-paypal-google-checkout/plug-and-play-digital-content-delivery/
-Description: Append PayPal and/or Google Checkout 'Buy It Now' buttons unto your posts, articles, menus and virtually anywhere you desire using shortcodes. QDD stands for the stages of the buy-it-now plugin, this one being the Quick Digital Delivery [QDD] level, quick deployment and minimal integration. A smart digital content payment and delivery platform for WebMasters, Blog Administrators and everyday users alike. Perfect for all-inclusive, all-access, single product or single service website business models. Custom adaptation for multi-product websites is available, at a nominal cost, just contact the developer to get started.
-Version: 1.3
-Author: Louie Rd
-Author URI: http://LouieRD.com/
+Plugin Name: WP-BuyItNow by VPS-NET (Simple Payment Gateway)
+Plugin URI: http://vps-net.com/internet-development-tools/wordpress-plugins/buy-it-now-button.php
+Description: Append PayPal buttons unto posts, articles, menus and virtually anywhere desired, using nothing but short codes. An integrated sales platform complete with payment lifecycle initialization and monitoring capabilities, along with digital or shipped product delivery functionality. BuyItNow also has cancellation, refund and order tracking information along with the uniquely cool 'digital media locker' functionality, which further enhances an online sales platform's capabilities. There are many other options, variables and features which make quick deployment a definite possibility, working with very minimal integration times along with the least possible amount of technical requirements on the server, host and the end-user level.
+Version: 2.0.1
+Author: Luis Gustavo Rodriguez (drlouie)
 */
 
 /*  Copyright 2011 VPS-NET.COM (Email: wp-plugins@vps-net.com)
@@ -32,7 +31,6 @@ Author URI: http://LouieRD.com/
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
 ///////////////////////////////////////////
 /////////////* START VARIABLES *///////////
 ///////////////////////////////////////////
@@ -46,8 +44,8 @@ Author URI: http://LouieRD.com/
 
 //--> Properties
 $StoreDomain = "http://".$_SERVER["SERVER_NAME"]."";
-$StoreName = "Jonathan's Virtual Classroom";
-$StoreOwnerName = "Jonathan L.D.";
+$StoreName = "Jon's Virtual Classroom";
+$StoreOwnerName = "Jon L.D.";
 $StoreOwnerTitle = "Educational Speaker and Internet Columnist";
 //-->> IP based server
 if (filter_var($_SERVER["SERVER_NAME"], FILTER_VALIDATE_IP)) { $StoreDomainName = $_SERVER["SERVER_NAME"]; }
@@ -81,7 +79,7 @@ $NewOrderMessage = 1;
 //--> [ADMIN] PAYMENT SUCCESSFULY PROCESSED MESSAGE On/Off [0/1] [Send message to admin upon receiving confirmation of successful payment processing]
 $PaymentVerifiedMessage = 1;
 
-//--> FOR TESTING [PayPal Sandbox and/or Google Checkout Sandbox]
+//--> FOR TESTING [PayPal Sandbox]
 //--> [0=production, 1=testing]
 $testing = 1;
 
@@ -105,27 +103,6 @@ $PayPalForm = '
 	</div>
 ';
 
-//--> Google Checkout Merchant Account/Cart Properties [production and sandbox]
-//--> [!!README!!] MAKE SURE TO UNCHECK SIGNED CART OPTION: My company will only post digitally signed carts. [!!README!!]
-//--> TO FIND THIS OPTION: 
-//--> Step 1: Log into checkout.google.com/sell/
-//--> Step 2: Click 'Settings' tab [top] >> Then click 'Integration' [left]
-//--> Step 3: Uncheck: My company will only post digitally signed carts.
-//--> Step 4: Now, the following two variables, Google merchant ID (Google merchant key: not needed, not sending signed carts)
-$PaymentMerchant_GoogleCheckout = '';
-//--> Step 5: Find your Google Checkout Sandbox Merchant ID. You should be able to create/find it fairly easily.
-$PaymentMerchant_GoogleCheckout_Sandbox = '308344762847990';
-//--> Google Checkout Button Image
-$GoogleCheckoutButtonImage = 'alt="Fast checkout through Google" src="http://checkout.google.com/buttons/checkout.gif?merchant_id='.$PaymentMerchant_GoogleCheckout.'&w=160&h=43&style=trans&variant=text&loc=en_US" width="160" height="43"';
-//--> Google Checkout Form as Button (Customizable markup, just place %%GOOGLE-CHECKOUT-FORM%% where you want the button appear)
-$GoogleCheckoutForm = '
-	<div id="google-checkout" style="width:165px;height:40px;overflow:hidden;clip:rect(0px,165px,40px,0px);">
-		<div id="google-checkout-form">%%GOOGLE-CHECKOUT-FORM%%</div>
-	</div>
-';
-
-
-
 //--> GENERAL CALLBACK URL [callback to this very page user is currently viewing]
 //--> Depending on your WordPress and Server setup, you might need to use either the query-string initilization(?) or continuance(&) character [$starter]
 $starter = '&';
@@ -141,28 +118,17 @@ $callbackURI = $myRUI . "" . $starter;
 //--> More Automated Responses
 $EmailFooterMessage = "Do not reply to this message, as it was sent by ".$GLOBALS["StoreName"].": ".$GLOBALS["StoreDomain"].", an automated mailbox that's never checked.\r\n\r\nPowered by WP-BuyItNow, a WordPress Shopping Cart Plugin, by VPS-NET (http://www.vps-net.com)";
 
-//--> SHIPPING TABLES: For both PayPal and GoogleCheckout [highly customizable] [both currently set to 'No Shipping Necessary', in essence, 'Digital Delivery'
-//--> To customize the delivery method(s)/option(s)/price(s) start by changing/adding/deleting the name/value pairs according to each payment processors' variables
+//--> SHIPPING TABLES: For PayPal [currently set to 'No Shipping Necessary', in essence, 'Digital Delivery'
+//--> To customize the delivery method(s)/option(s)/price(s) start by changing/adding/deleting the name/value pairs according to the payment processors' available variables
 	
-	//-->> PayPal HTML Variables: https://www.x.com/docs/DOC-1332
+	//-->> PayPal HTML Variables: https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/Appx_websitestandard_htmlvariables/#individual-items-variables
 	$PayPal_Shipping_Table = array(
 		'no_shipping' => '1'
 	);
 	
-	//-->> Google Checkout - Shipping and Digital Delivery [HTML Variables]
-	//-->> http://code.google.com/apis/checkout/developer/Google_Checkout_HTML_API.html#shipping_xsd
-	function getGoogleShippingTable($myProductName) {
-		$returnURLGC = "".$GLOBALS["StoreDomain"]."".$GLOBALS["callbackURI"]."wp-buyitnow-item=".trim(str_replace("'","",str_replace('"',"",stripslashes($myProductName))))."&wp-buyitnow-processor=Google";
-		return array(
-			//'shopping-cart.items.item-1.digital-content.display-disposition' => 'PESSIMISTIC',
-			//'shopping-cart.items.item-1.digital-content.email-delivery' => 'true'
-			'shopping-cart.items.item-1.digital-content.display-disposition' => 'OPTIMISTIC',
-			'shopping-cart.items.item-1.digital-content.description' => 'You are done! You can now access the digital media you purchased by revisiting &amp;lt;a href='.$returnURLGC.'&amp;gt;'.trim(str_replace("'","",str_replace('"',"",stripslashes($GLOBALS["StoreName"])))).'&amp;lt;/a&amp;gt;.&lt;br&gt;&lt;br&gt;PLEASE NOTE: You will need to have the Google Checkout Transaction ID Number associated with this order, along with your email address, to log in and access the media you purchased.&lt;br&gt;&lt;br&gt;HINT: The Transaction ID is located in the URL of the webpage you are currently viewing here on Google Checkout. For instance, if the URL for this webpage ended with confirmation?t=888888888888, the Transaction ID for this order would be: 888888888888.&lt;br&gt;&lt;br&gt;Having trouble finding the Transaction ID? Just check your email, it will be included in your order confirmation message from Google Checkout.'
-		);
-	}
 //--> 
-//--> WORTHY TIP: You can alter the entire payment process for either PayPal or Google Checkout by appending, removing, changing the key/value pairs being sent to each processor
-//--> WHAT THIS MEANS: You can utilize the Shipping Table arrays above to alter the way PayPal or Google Checkout processes your transactions in general or individually for each item you are selling.
+//--> WORTHY TIP: You can alter the entire payment process for PayPal by appending, removing, changing the key/value pairs being sent to each processor
+//--> WHAT THIS MEANS: You can utilize the Shipping Table arrays above to alter the way PayPal processes your transactions in general or individually for each item you are selling.
 //--> 
 
 
@@ -182,7 +148,6 @@ $OutgoingMarkup = '
 				<td style="border:0;margin:0;" align="center" colspan="2"><h4 style="font-weight:bold;margin-bottom:6px;">You may purchase access to this protected digital content:</h4></td>
 			</tr>
 			<tr>
-				<td style="border:0;margin:0;" align="right">%%Google%%</td>
 				<td style="border:0;margin:0;" align="left">%%PayPal%%</td>
 			</tr>
 			<tr>
@@ -212,18 +177,13 @@ if ($testing == 1) {
 	$testingField = '<input type="hidden" name="test" value="1"/>';
 	$PaymentMerchantPP = $GLOBALS["PaymentMerchant_PayPal_Sandbox"];
 	$PaymentURLPP = 'www.sandbox.paypal.com';
-	$PaymentMerchantGC = $GLOBALS["PaymentMerchant_GoogleCheckout_Sandbox"];
-	$PaymentURLGC = 'sandbox.google.com/checkout/';
 }
 else {
 	$PaymentMerchantPP = $GLOBALS["PaymentMerchant_PayPal"];
 	$PaymentURLPP = 'www.paypal.com';
-	$PaymentMerchantGC = $GLOBALS["PaymentMerchant_GoogleCheckout"];
-	$PaymentURLGC = 'checkout.google.com/';
 	$CharSetAccept = 'accept-charset="utf-8"';
 }
 
-$fullPaymentURLGC = 'https://'.$PaymentURLGC.'api/checkout/v2/checkoutForm/Merchant/'.$PaymentMerchantGC.'';
 $fullPaymentURLPP = 'https://'.$PaymentURLPP.'/cgi-bin/webscr';
 
 //--> UNIX timestamp
